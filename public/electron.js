@@ -57,12 +57,23 @@ async function testDatabaseConnection() {
 
 // Auto-updater configuration
 if (!isDev) {
+  console.log('🔧 Configuring auto-updater for GitHub...');
+  
   // Enhanced configuration for GitHub with better error handling
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'Ezemind',
     repo: 'rfq-explorer',
     token: process.env.GH_TOKEN || process.env.GITHUB_TOKEN, // Use environment variable
+    private: false,
+    releaseType: 'release'
+  });
+  
+  console.log('⚙️ Auto-updater feed URL set:', {
+    provider: 'github',
+    owner: 'Ezemind',
+    repo: 'rfq-explorer',
+    hasToken: !!(process.env.GH_TOKEN || process.env.GITHUB_TOKEN),
     private: false,
     releaseType: 'release'
   });
@@ -74,9 +85,11 @@ if (!isDev) {
   
   // Check for updates after app is ready
   setTimeout(() => {
-    console.log('🔍 Checking for updates...');
-    autoUpdater.checkForUpdatesAndNotify();
-  }, 5000); // Increased delay to ensure app is fully loaded
+    console.log('🔍 Auto-checking for updates on startup...');
+    autoUpdater.checkForUpdatesAndNotify().catch(error => {
+      console.error('❌ Auto-update check failed:', error);
+    });
+  }, 10000); // Increased delay
   
   autoUpdater.on('checking-for-update', () => {
     console.log('🔍 Checking for update...');
@@ -688,11 +701,91 @@ ipcMain.handle('open-external', (event, url) => {
 });
 
 // Auto-updater IPC handlers
-ipcMain.handle('check-for-updates', () => {
-  if (!isDev) {
-    autoUpdater.checkForUpdatesAndNotify();
+ipcMain.handle('check-for-updates', async () => {
+  if (isDev) {
+    console.log('⚠️ Update checking disabled in development mode');
+    if (mainWindow) {
+      mainWindow.webContents.send('update-error', {
+        message: 'Update checking is only available in production builds',
+        stack: 'Development mode detected'
+      });
+    }
+    return { success: false, error: 'Development mode' };
   }
-  return { success: true };
+  
+  try {
+    console.log('🔍 Manual update check initiated...');
+    if (mainWindow) {
+      mainWindow.webContents.send('update-status', 'checking');
+    }
+    
+    // First try the electron-updater method
+    try {
+      const result = await autoUpdater.checkForUpdatesAndNotify();
+      console.log('✅ Update check completed via electron-updater:', result);
+      return { success: true, result };
+    } catch (updaterError) {
+      console.log('⚠️ Electron-updater failed, trying manual GitHub API check...');
+      
+      // Fallback to manual GitHub API check
+      const currentVersion = app.getVersion();
+      console.log('📊 Current version:', currentVersion);
+      
+      const response = await axios.get('https://api.github.com/repos/Ezemind/rfq-explorer/releases/latest', {
+        timeout: 10000,
+        headers: {
+          'User-Agent': 'RFQ-Explorer-Updater'
+        }
+      });
+      
+      const latestRelease = response.data;
+      const latestVersion = latestRelease.tag_name.replace('v', '');
+      
+      console.log('📊 Latest version on GitHub:', latestVersion);
+      console.log('📊 Current version:', currentVersion);
+      
+      // Simple version comparison
+      if (latestVersion !== currentVersion) {
+        console.log('✅ Update available!');
+        if (mainWindow) {
+          mainWindow.webContents.send('update-available', {
+            version: latestVersion,
+            releaseNotes: latestRelease.body || 'Update available',
+            downloadUrl: latestRelease.assets[0]?.browser_download_url
+          });
+          mainWindow.webContents.send('update-status', 'available');
+        }
+        return { 
+          success: true, 
+          updateAvailable: true, 
+          latestVersion,
+          currentVersion,
+          downloadUrl: latestRelease.assets[0]?.browser_download_url
+        };
+      } else {
+        console.log('ℹ️ No update available');
+        if (mainWindow) {
+          mainWindow.webContents.send('update-not-available', { version: currentVersion });
+          mainWindow.webContents.send('update-status', 'latest');
+        }
+        return { 
+          success: true, 
+          updateAvailable: false,
+          currentVersion
+        };
+      }
+    }
+  } catch (error) {
+    console.error('❌ Update check failed:', error);
+    if (mainWindow) {
+      mainWindow.webContents.send('update-error', {
+        message: error.message || 'Failed to check for updates',
+        stack: error.stack
+      });
+      mainWindow.webContents.send('update-status', 'error');
+    }
+    return { success: false, error: error.message };
+  }
 });
 
 ipcMain.handle('quit-and-install', () => {
