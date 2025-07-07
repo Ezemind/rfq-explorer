@@ -1,6 +1,6 @@
 {
   "name": "rfq-explorer",
-  "version": "1.1.9",
+  "version": "1.1.8",
   "description": "RFQ Explorer - Professional CRM solution for managing quotes and customer communications",
   "author": {
     "name": "Pieter Kemp",
@@ -10,7 +10,7 @@
   "main": "public/electron.js",
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build && copy public\\mcm-white-logo.png build\\ && xcopy assets build\\assets\\ /E /I /Y",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "electron": "wait-on http://localhost:3000 && electron .",
@@ -68,7 +68,13 @@
       "build/**/*",
       "node_modules/**/*",
       "public/electron.js",
-      "public/preload.js"
+      "public/preload.js",
+      "assets/**/*",
+      {
+        "from": "assets",
+        "to": "assets",
+        "filter": ["**/*"]
+      }
     ],
     "win": {
       "target": [
@@ -84,6 +90,13 @@
         "github"
       ]
     },
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets",
+        "filter": ["**/*"]
+      }
+    ],
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,

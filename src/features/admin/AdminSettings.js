@@ -27,6 +27,7 @@ import { ScrollableContainer } from '../../components/ui/scrollable-container';
 import { cn } from '../../lib/utils';
 import { formatSADate } from '../../utils/timeZone';
 import EmailManagement from './components/EmailManagement';
+import UpdateSettings from '../../components/UpdateSettings';
 import { useToast } from '../../contexts/ToastContext';
 import { useInlineNotification } from '../../hooks/useNotification';
 import InlineNotification from '../../components/ui/InlineNotification';
@@ -619,6 +620,8 @@ function SystemSettingsWrapper() {
               </div>
             </div>
           </div>
+          
+          <UpdateSettings />
         </CardContent>
       </Card>
     </div>

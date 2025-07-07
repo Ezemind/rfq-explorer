@@ -38,6 +38,26 @@ const dbConfig = {
 
 const db = new Pool(dbConfig);
 
+// Test database connection on startup
+async function testDatabaseConnection() {
+  try {
+    console.log('🔍 Testing database connection...');
+    const result = await db.query('SELECT NOW() as current_time');
+    console.log('✅ Database connected successfully:', result.rows[0].current_time);
+    return true;
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
+    console.error('Full error:', error);
+    return false;
+  }
+}
+
+// Test connection when app starts
+app.whenReady().then(async () => {
+  await testDatabaseConnection();
+  createWindow();
+});
+
 // Auto-updater configuration
 if (!isDev) {
   // Enhanced configuration for GitHub with better error handling
@@ -121,12 +141,37 @@ if (!isDev) {
 }
 
 function createWindow() {
+  // Better icon path resolution
+  let iconPath;
+  if (isDev) {
+    iconPath = path.join(__dirname, '../assets/icon.png');
+  } else {
+    // Try multiple possible paths for production
+    const possiblePaths = [
+      path.join(process.resourcesPath, 'assets/icon.png'),
+      path.join(process.resourcesPath, 'app.asar.unpacked/assets/icon.png'),
+      path.join(__dirname, '../assets/icon.png'),
+      path.join(__dirname, 'assets/icon.png')
+    ];
+    
+    iconPath = possiblePaths.find(p => {
+      const exists = require('fs').existsSync(p);
+      if (exists) console.log('✅ Found icon at:', p);
+      return exists;
+    });
+    
+    if (!iconPath) {
+      console.log('⚠️ Icon not found, using default');
+      iconPath = undefined; // Let Electron use default
+    }
+  }
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1200,
     minHeight: 700,
-    icon: isDev ? path.join(__dirname, '../assets/icon.png') : path.join(__dirname, '../assets/icon.png'),
+    icon: iconPath,
     title: 'RFQ Explorer - Professional CRM Solution',
     webPreferences: {
       nodeIntegration: false,
@@ -153,8 +198,24 @@ function createWindow() {
     ? 'http://localhost:3000' 
     : `file://${path.join(__dirname, '../build/index.html')}`;
     
-  console.log('Loading URL:', startUrl);
-  console.log('Build path exists:', require('fs').existsSync(path.join(__dirname, '../build/index.html')));
+  console.log('🔍 Loading URL:', startUrl);
+  console.log('📁 __dirname:', __dirname);
+  console.log('📁 process.cwd():', process.cwd());
+  console.log('📁 app.getAppPath():', app.getAppPath());
+  console.log('📁 process.resourcesPath:', process.resourcesPath);
+  console.log('📄 Build index.html exists:', require('fs').existsSync(path.join(__dirname, '../build/index.html')));
+  console.log('🖼️ Icon path:', iconPath);
+  console.log('🖼️ Icon exists:', iconPath ? require('fs').existsSync(iconPath) : 'No icon path');
+  
+  // Debug build directory contents
+  if (!isDev) {
+    const buildPath = path.join(__dirname, '../build');
+    if (require('fs').existsSync(buildPath)) {
+      console.log('📁 Build directory contents:', require('fs').readdirSync(buildPath));
+    } else {
+      console.log('❌ Build directory does not exist');
+    }
+  }
   
   mainWindow.loadURL(startUrl);
 
@@ -264,10 +325,60 @@ app.on('window-all-closed', () => {
 // IPC Handlers for database operations
 ipcMain.handle('db-query', async (event, query, params = []) => {
   try {
+    console.log('🔍 Database query:', query.substring(0, 100) + '...');
+    console.log('📊 Query params:', params);
+    
     const result = await db.query(query, params);
+    console.log('✅ Query successful, rows returned:', result.rows.length);
+    
     return { success: true, data: result.rows };
   } catch (error) {
-    console.error('Database query error:', error);
+    console.error('❌ Database query error:', error.message);
+    console.error('Query was:', query);
+    console.error('Params were:', params);
+    console.error('Full error:', error);
+    
+    return { success: false, error: error.message, details: error.stack };
+  }
+});
+
+// Database test function
+ipcMain.handle('db-test', async (event) => {
+  try {
+    console.log('🔍 Running database diagnostics...');
+    
+    // Test basic connection
+    const timeResult = await db.query('SELECT NOW() as current_time');
+    
+    // Check what tables exist
+    const tablesResult = await db.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+      ORDER BY table_name
+    `);
+    
+    // Check staff_users table
+    let staffCount = 0;
+    try {
+      const staffResult = await db.query('SELECT COUNT(*) as count FROM staff_users');
+      staffCount = staffResult.rows[0].count;
+    } catch (e) {
+      console.log('staff_users table might not exist:', e.message);
+    }
+    
+    const diagnostics = {
+      connection: true,
+      currentTime: timeResult.rows[0].current_time,
+      tables: tablesResult.rows.map(row => row.table_name),
+      staffUsersCount: staffCount
+    };
+    
+    console.log('📊 Database diagnostics:', diagnostics);
+    return { success: true, data: diagnostics };
+    
+  } catch (error) {
+    console.error('❌ Database test failed:', error);
     return { success: false, error: error.message };
   }
 });
@@ -275,12 +386,17 @@ ipcMain.handle('db-query', async (event, query, params = []) => {
 // Authentication
 ipcMain.handle('auth-login', async (event, { username, password }) => {
   try {
+    console.log('🔐 Login attempt for username:', username);
+    
     const result = await db.query(
       'SELECT id, username, role, password_hash, first_name, last_name, email FROM staff_users WHERE username = $1 AND is_active = true',
       [username]
     );
     
+    console.log('👤 User lookup result:', result.rows.length > 0 ? 'User found' : 'User not found');
+    
     if (result.rows.length === 0) {
+      console.log('❌ Invalid credentials - user not found');
       return { success: false, error: 'Invalid credentials' };
     }
 
@@ -288,6 +404,7 @@ ipcMain.handle('auth-login', async (event, { username, password }) => {
     
     // Verify password using bcrypt
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    console.log('🔒 Password validation:', isValidPassword ? 'Success' : 'Failed');
     
     if (isValidPassword) {
       // Update last login
@@ -295,6 +412,8 @@ ipcMain.handle('auth-login', async (event, { username, password }) => {
         'UPDATE staff_users SET last_login = NOW() WHERE id = $1',
         [user.id]
       );
+      
+      console.log('✅ Login successful for user:', user.username);
       
       return { 
         success: true, 
@@ -308,11 +427,12 @@ ipcMain.handle('auth-login', async (event, { username, password }) => {
         } 
       };
     } else {
+      console.log('❌ Invalid credentials - wrong password');
       return { success: false, error: 'Invalid credentials' };
     }
   } catch (error) {
-    console.error('Auth error:', error);
-    return { success: false, error: 'Authentication failed' };
+    console.error('❌ Auth error:', error);
+    return { success: false, error: 'Authentication failed: ' + error.message };
   }
 });
 // WhatsApp API operations

@@ -7,7 +7,6 @@ import { ConfirmProvider } from './contexts/ConfirmContext';
 import LoginPage from './features/auth/LoginPage';
 import Dashboard from './features/dashboard/Dashboard';
 import ToastContainer from './components/ui/ToastContainer';
-import UpdateNotification from './components/UpdateNotification';
 import './App.css';
 import './styles/notifications.css';
 
@@ -87,7 +86,6 @@ function AppContent() {
         />
       </Routes>
       <ToastContainer />
-      <UpdateNotification />
     </div>
   );
 }

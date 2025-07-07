@@ -3,6 +3,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   // Database operations
   dbQuery: (query, params) => ipcRenderer.invoke('db-query', query, params),
+  query: (query, params) => ipcRenderer.invoke('db-query', query, params), // Alias for compatibility
+  dbTest: () => ipcRenderer.invoke('db-test'),
   
   // Authentication
   authLogin: (credentials) => ipcRenderer.invoke('auth-login', credentials),
