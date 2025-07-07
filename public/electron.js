@@ -731,27 +731,44 @@ ipcMain.handle('check-for-updates', async () => {
       const currentVersion = app.getVersion();
       console.log('📊 Current version:', currentVersion);
       
-      const response = await axios.get('https://api.github.com/repos/Ezemind/rfq-explorer/releases/latest', {
-        timeout: 10000,
+      const apiUrl = 'https://api.github.com/repos/Ezemind/rfq-explorer/releases/latest';
+      console.log('🌐 Fetching from:', apiUrl);
+      
+      const response = await axios.get(apiUrl, {
+        timeout: 15000,
         headers: {
-          'User-Agent': 'RFQ-Explorer-Updater'
+          'User-Agent': 'RFQ-Explorer-Updater',
+          'Accept': 'application/vnd.github.v3+json'
         }
       });
+      
+      console.log('📡 GitHub API response status:', response.status);
       
       const latestRelease = response.data;
       const latestVersion = latestRelease.tag_name.replace('v', '');
       
       console.log('📊 Latest version on GitHub:', latestVersion);
       console.log('📊 Current version:', currentVersion);
+      console.log('🗂️ Available assets:', latestRelease.assets?.map(a => a.name));
       
-      // Simple version comparison
-      if (latestVersion !== currentVersion) {
+      // Find the main installer asset
+      const installerAsset = latestRelease.assets?.find(asset => 
+        asset.name.includes('.exe') && !asset.name.includes('.blockmap')
+      );
+      
+      console.log('💾 Installer asset found:', installerAsset?.name);
+      
+      // Simple version comparison (compare as strings for now)
+      const isUpdateAvailable = latestVersion !== currentVersion && latestVersion > currentVersion;
+      console.log('🔄 Update available:', isUpdateAvailable);
+      
+      if (isUpdateAvailable && installerAsset) {
         console.log('✅ Update available!');
         if (mainWindow) {
           mainWindow.webContents.send('update-available', {
             version: latestVersion,
             releaseNotes: latestRelease.body || 'Update available',
-            downloadUrl: latestRelease.assets[0]?.browser_download_url
+            downloadUrl: installerAsset.browser_download_url
           });
           mainWindow.webContents.send('update-status', 'available');
         }
@@ -760,10 +777,10 @@ ipcMain.handle('check-for-updates', async () => {
           updateAvailable: true, 
           latestVersion,
           currentVersion,
-          downloadUrl: latestRelease.assets[0]?.browser_download_url
+          downloadUrl: installerAsset.browser_download_url
         };
       } else {
-        console.log('ℹ️ No update available');
+        console.log('ℹ️ No update available or no installer found');
         if (mainWindow) {
           mainWindow.webContents.send('update-not-available', { version: currentVersion });
           mainWindow.webContents.send('update-status', 'latest');
@@ -771,20 +788,29 @@ ipcMain.handle('check-for-updates', async () => {
         return { 
           success: true, 
           updateAvailable: false,
-          currentVersion
+          currentVersion,
+          latestVersion
         };
       }
     }
   } catch (error) {
     console.error('❌ Update check failed:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.status,
+      responseData: error.response?.data
+    });
+    
     if (mainWindow) {
       mainWindow.webContents.send('update-error', {
         message: error.message || 'Failed to check for updates',
+        details: `Error: ${error.message}${error.response ? ` (HTTP ${error.response.status})` : ''}`,
         stack: error.stack
       });
       mainWindow.webContents.send('update-status', 'error');
     }
-    return { success: false, error: error.message };
+    return { success: false, error: error.message, details: error.response?.data };
   }
 });
 
