@@ -53,6 +53,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   
+  // Test IPC communication
+  testIPC: () => ipcRenderer.invoke('test-ipc'),
+  
   // Auto-updater events
   onUpdateAvailable: (callback) => {
     ipcRenderer.on('update-available', callback);

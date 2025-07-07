@@ -849,6 +849,18 @@ ipcMain.handle('get-app-version', () => {
   return { version: app.getVersion() };
 });
 
+// Simple test handler to verify IPC communication
+ipcMain.handle('test-ipc', async () => {
+  console.log('🧪 IPC test handler called');
+  return { 
+    success: true, 
+    message: 'IPC communication working',
+    timestamp: new Date().toISOString(),
+    isPackaged: app.isPackaged,
+    appPath: app.getAppPath()
+  };
+});
+
 // File upload handler
 ipcMain.handle('upload-file', async (event, { to, file, message }) => {
   try {

@@ -91,20 +91,65 @@ const UpdateSettings = () => {
     }
   };
 
-  const handleCheckForUpdates = () => {
+  const handleCheckForUpdates = async () => {
     if (window.electronAPI) {
+      console.log('🔍 Starting update check...');
       setChecking(true);
-      setError(null); // Reset error state
-      window.electronAPI.checkForUpdates();
+      setError(null);
       setUpdateState('checking');
       
-      // Reset checking state after timeout if no response
+      try {
+        // Call the update check and wait for response
+        const result = await window.electronAPI.checkForUpdates();
+        console.log('📊 Update check result:', result);
+        
+        if (result.success) {
+          if (result.updateAvailable) {
+            console.log('✅ Update available:', result.latestVersion);
+            setUpdateState('available');
+          } else {
+            console.log('ℹ️ No update available');
+            setUpdateState('not-available');
+          }
+        } else {
+          console.log('❌ Update check failed:', result.error);
+          setError({
+            message: result.error || 'Update check failed',
+            details: result.details || 'No additional details available'
+          });
+          setUpdateState('error');
+        }
+      } catch (error) {
+        console.error('❌ Update check exception:', error);
+        setError({
+          message: 'Failed to communicate with update service',
+          details: error.message || error.toString()
+        });
+        setUpdateState('error');
+      } finally {
+        setChecking(false);
+      }
+      
+      // Reset state after timeout if no response
       setTimeout(() => {
         if (updateState === 'checking') {
+          console.log('⏰ Update check timeout');
           setChecking(false);
-          setUpdateState(null);
+          setUpdateState('error');
+          setError({
+            message: 'Update check timed out',
+            details: 'No response received within 15 seconds'
+          });
         }
-      }, 10000);
+      }, 15000);
+    } else {
+      console.error('❌ ElectronAPI not available');
+      setError({
+        message: 'Update service not available',
+        details: 'ElectronAPI is not accessible'
+      });
+      setUpdateState('error');
+      setChecking(false);
     }
   };
 
@@ -114,7 +159,7 @@ const UpdateSettings = () => {
         return (
           <div className="flex items-center gap-2 text-blue-600">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-            <span className="text-sm">Checking...</span>
+            <span className="text-sm">Checking for updates...</span>
           </div>
         );
       case 'downloading':
@@ -129,6 +174,13 @@ const UpdateSettings = () => {
           <div className="flex items-center gap-2 text-green-600">
             <CheckCircle className="h-4 w-4" />
             <span className="text-sm">Update Ready</span>
+          </div>
+        );
+      case 'available':
+        return (
+          <div className="flex items-center gap-2 text-orange-600">
+            <Download className="h-4 w-4" />
+            <span className="text-sm">Update Available</span>
           </div>
         );
       case 'not-available':
@@ -149,7 +201,7 @@ const UpdateSettings = () => {
         return (
           <div className="flex items-center gap-2 text-slate-600">
             <Settings className="h-4 w-4" />
-            <span className="text-sm">Ready</span>
+            <span className="text-sm">{checking ? 'Checking...' : 'Ready'}</span>
           </div>
         );
     }
@@ -234,6 +286,29 @@ const UpdateSettings = () => {
             </div>
           )}
 
+          {updateState === 'available' && (
+            <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg">
+              <div className="flex items-center gap-2 text-orange-800 dark:text-orange-300 mb-2">
+                <Download className="h-4 w-4" />
+                <span className="font-medium">Update Available</span>
+              </div>
+              <p className="text-sm text-orange-700 dark:text-orange-400 mb-3">
+                A new version of RFQ Explorer is available and ready to download.
+              </p>
+              <Button
+                onClick={() => {
+                  if (window.electronAPI && window.electronAPI.quitAndInstall) {
+                    window.electronAPI.quitAndInstall();
+                  }
+                }}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+                size="sm"
+              >
+                Download & Install Update
+              </Button>
+            </div>
+          )}
+
           {updateState === 'not-available' && (
             <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg">
               <div className="flex items-center gap-2 text-green-800 dark:text-green-300 mb-2">
@@ -256,6 +331,28 @@ const UpdateSettings = () => {
             >
               <RefreshCw className={`h-4 w-4 ${checking ? 'animate-spin' : ''}`} />
               {checking ? 'Checking...' : 'Check for Updates'}
+            </Button>
+            
+            <Button
+              onClick={async () => {
+                if (window.electronAPI && window.electronAPI.testIPC) {
+                  try {
+                    const result = await window.electronAPI.testIPC();
+                    console.log('🧪 IPC Test Result:', result);
+                    alert(`IPC Test: ${result.success ? 'SUCCESS' : 'FAILED'}\n\nDetails:\n${JSON.stringify(result, null, 2)}`);
+                  } catch (error) {
+                    console.error('❌ IPC Test Failed:', error);
+                    alert(`IPC Test FAILED: ${error.message}`);
+                  }
+                } else {
+                  alert('IPC Test FAILED: testIPC function not available');
+                }
+              }}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+            >
+              Test IPC
             </Button>
           </div>
 
