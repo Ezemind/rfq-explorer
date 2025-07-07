@@ -40,22 +40,18 @@ const db = new Pool(dbConfig);
 
 // Auto-updater configuration
 if (!isDev) {
-  // Enable logging
-  autoUpdater.logger = console;
-  
-  // Configure the update server
+  // Simple configuration for GitHub
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'Ezemind',
-    repo: 'rfq-explorer',
-    private: false
+    repo: 'rfq-explorer'
   });
   
-  // Check for updates after app is ready with delay
+  // Check for updates after app is ready
   setTimeout(() => {
-    console.log('Starting auto-updater check...');
+    console.log('🔍 Checking for updates...');
     autoUpdater.checkForUpdatesAndNotify();
-  }, 5000); // Wait 5 seconds after app starts
+  }, 3000);
   
   autoUpdater.on('checking-for-update', () => {
     console.log('🔍 Checking for update...');
@@ -69,31 +65,28 @@ if (!isDev) {
   });
   
   autoUpdater.on('update-not-available', (info) => {
-    console.log('ℹ️ Update not available:', info);
+    console.log('ℹ️ Update not available');
     if (mainWindow) {
       mainWindow.webContents.send('update-not-available', info);
     }
   });
   
   autoUpdater.on('error', (err) => {
-    console.error('❌ Error in auto-updater:', err);
+    console.error('❌ Auto-updater error:', err.message);
     if (mainWindow) {
       mainWindow.webContents.send('update-error', err.message);
     }
   });
   
   autoUpdater.on('download-progress', (progressObj) => {
-    let log_message = "📥 Download speed: " + progressObj.bytesPerSecond;
-    log_message = log_message + ' - Downloaded ' + progressObj.percent + '%';
-    log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
-    console.log(log_message);
+    console.log(`📥 Download progress: ${Math.round(progressObj.percent)}%`);
     if (mainWindow) {
       mainWindow.webContents.send('download-progress', progressObj);
     }
   });
   
   autoUpdater.on('update-downloaded', (info) => {
-    console.log('✅ Update downloaded:', info);
+    console.log('✅ Update downloaded');
     if (mainWindow) {
       mainWindow.webContents.send('update-downloaded', info);
     }
@@ -129,11 +122,21 @@ function createWindow() {
     ? 'http://localhost:3000' 
     : `file://${path.join(__dirname, '../build/index.html')}`;
     
+  console.log('Loading URL:', startUrl);
+  
   mainWindow.loadURL(startUrl);
+
+  // Handle loading errors
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Failed to load:', errorCode, errorDescription);
+  });
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     if (isDev) {
+      mainWindow.webContents.openDevTools();
+    } else {
+      // Open dev tools in production to debug the white screen
       mainWindow.webContents.openDevTools();
     }
   });
