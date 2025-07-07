@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // WhatsApp operations
   whatsappSendMessage: (data) => ipcRenderer.invoke('whatsapp-send-message', data),
+  sendMessage: (data) => ipcRenderer.invoke('whatsapp-send-message', data), // Alias for compatibility
   
   // Notifications
   showNotification: (data) => ipcRenderer.invoke('show-notification', data),
@@ -29,6 +30,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   emailScheduleFollowup: (data) => ipcRenderer.invoke('email-schedule-followup', data),
   emailProcessScheduled: () => ipcRenderer.invoke('email-process-scheduled'),
   emailAutoScheduleRfqFollowups: (data) => ipcRenderer.invoke('email-auto-schedule-rfq-followups', data),
+  
+  // AI Control operations
+  aiGetStatus: (phoneNumber) => ipcRenderer.invoke('ai-get-status', phoneNumber),
+  getAIStatus: (phoneNumber) => ipcRenderer.invoke('ai-get-status', phoneNumber), // Alias for compatibility
+  aiToggleStatus: (phoneNumber, enabled) => ipcRenderer.invoke('ai-toggle-status', phoneNumber, enabled),
+  toggleAIStatus: (phoneNumber, enabled) => ipcRenderer.invoke('ai-toggle-status', phoneNumber, enabled), // Alias for compatibility
+  aiDisableForHumanTakeover: (phoneNumber) => ipcRenderer.invoke('ai-disable-for-human-takeover', phoneNumber),
+  disableAIForHumanTakeover: (phoneNumber) => ipcRenderer.invoke('ai-disable-for-human-takeover', phoneNumber), // Alias for compatibility
+  aiCanRespond: (phoneNumber) => ipcRenderer.invoke('ai-can-respond', phoneNumber),
+  canAIRespond: (phoneNumber) => ipcRenderer.invoke('ai-can-respond', phoneNumber), // Alias for compatibility
+  aiReenableAfterTimeout: () => ipcRenderer.invoke('ai-reenable-after-timeout'),
+  
+  // Generic invoke function for any IPC calls
+  invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
   
   // External operations
   openExternal: (url) => ipcRenderer.invoke('open-external', url),

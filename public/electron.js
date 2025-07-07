@@ -53,10 +53,7 @@ async function testDatabaseConnection() {
 }
 
 // Test connection when app starts
-app.whenReady().then(async () => {
-  await testDatabaseConnection();
-  createWindow();
-});
+// Moved to main app.whenReady() handler below
 
 // Auto-updater configuration
 if (!isDev) {
@@ -306,8 +303,15 @@ function createWindow() {
   });
 }
 // App event handlers
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Test database connection first
+  await testDatabaseConnection();
+  
+  // Create the main window
   createWindow();
+
+  // Start email processing after 10 seconds
+  setTimeout(startEmailProcessing, 10000);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -1492,10 +1496,7 @@ function startEmailProcessing() {
   console.log('📧 Email processing interval started');
 }
 
-// Start email processing when app is ready
-app.whenReady().then(() => {
-  setTimeout(startEmailProcessing, 10000); // Start after 10 seconds
-});
+// Email processing will be started in main app.whenReady() handler
 
 // Cleanup on app quit
 app.on('before-quit', () => {
