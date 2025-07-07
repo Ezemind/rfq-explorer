@@ -16,7 +16,7 @@ const UpdateNotification = () => {
 
       // Listen for update events
       const removeUpdateAvailable = window.electronAPI.onUpdateAvailable((event, info) => {
-        setUpdateState('available');
+        setUpdateState('downloading'); // Start downloading immediately
         setShowNotification(true);
       });
 

@@ -62,6 +62,8 @@ if (!isDev) {
     if (mainWindow) {
       mainWindow.webContents.send('update-available', info);
     }
+    // Start downloading automatically
+    autoUpdater.downloadUpdate();
   });
   
   autoUpdater.on('update-not-available', (info) => {
@@ -134,9 +136,6 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
     if (isDev) {
-      mainWindow.webContents.openDevTools();
-    } else {
-      // Open dev tools in production to debug the white screen
       mainWindow.webContents.openDevTools();
     }
   });
