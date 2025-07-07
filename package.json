@@ -1,6 +1,6 @@
 {
   "name": "rfq-explorer",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "RFQ Explorer - Professional CRM solution for managing quotes and customer communications",
   "author": {
     "name": "Pieter Kemp",
@@ -80,20 +80,6 @@
         }
       ],
       "icon": "assets/icon.ico",
-      "publish": [
-        "github"
-      ]
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns",
-      "publish": [
-        "github"
-      ]
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "assets/icon.png",
       "publish": [
         "github"
       ]
