@@ -86,6 +86,7 @@ function createWindow() {
     minWidth: 1200,
     minHeight: 700,
     icon: path.join(__dirname, '../assets/icon.png'),
+    title: 'RFQ Explorer - Professional CRM Solution',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

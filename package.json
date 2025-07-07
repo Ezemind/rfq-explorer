@@ -2,6 +2,11 @@
   "name": "rfq-explorer",
   "version": "1.0.3",
   "description": "RFQ Explorer - Professional CRM solution for managing quotes and customer communications",
+  "author": {
+    "name": "Pieter Kemp",
+    "email": "pieter@ezemind.com"
+  },
+  "copyright": "Copyright © 2025 Ezemind. All rights reserved.",
   "main": "public/electron.js",
   "scripts": {
     "start": "react-scripts start",
@@ -55,6 +60,7 @@
   "build": {
     "appId": "com.rfqexplorer.app",
     "productName": "RFQ Explorer",
+    "copyright": "Copyright © 2025 Ezemind. All rights reserved.",
     "directories": {
       "output": "dist"
     },
@@ -97,7 +103,15 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "RFQ Explorer"
+      "shortcutName": "RFQ Explorer",
+      "displayLanguageSelector": false,
+      "installerLanguages": ["en_US"],
+      "license": "LICENSE.txt",
+      "warningsAsErrors": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "runAfterFinish": true,
+      "menuCategory": "Business"
     },
     "publish": {
       "provider": "github",
