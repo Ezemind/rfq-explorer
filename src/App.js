@@ -40,9 +40,16 @@ function AppContent() {
     document.documentElement.className = theme;
   }, [theme]);
 
+  useEffect(() => {
+    // Debug auth state
+    console.log('🔐 Auth state:', { user, isAuthenticated, loading });
+  }, [user, isAuthenticated, loading]);
+
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
+
+  console.log('🎨 Rendering AppContent with loading:', loading, 'isAuthenticated:', isAuthenticated);
 
   if (loading) {
     return (

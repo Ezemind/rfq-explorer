@@ -39,7 +39,7 @@ export default function LoginPage() {
               Bob Explorer V3
             </h1>
             <p className="text-gray-400 text-sm">
-              WhatsApp CRM • Central Command Hub
+              WhatsApp CRM • Central Command Hub • v1.1.8
             </p>
           </div>
 

@@ -54,15 +54,25 @@ export default function AuthProvider({ children }) {
 
   const checkExistingSession = async () => {
     try {
+      console.log('🔍 Checking existing session...');
+      
+      // Wait a bit for electronAPI to be available
+      if (!window.electronAPI) {
+        console.log('⏳ ElectronAPI not ready, waiting...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
       const savedUser = localStorage.getItem('bobexplorer_user');
       if (savedUser) {
+        console.log('👤 Found saved user session');
         const user = JSON.parse(savedUser);
         dispatch({ type: 'AUTH_SUCCESS', payload: user });
       } else {
+        console.log('📝 No saved session found, showing login');
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     } catch (error) {
-      console.error('Session check error:', error);
+      console.error('❌ Session check error:', error);
       dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
@@ -71,7 +81,24 @@ export default function AuthProvider({ children }) {
     dispatch({ type: 'AUTH_START' });
     
     try {
-      const result = await window.electronAPI.login(credentials);
+      // Wait for electronAPI to be available
+      if (!window.electronAPI) {
+        console.log('⏳ Waiting for electronAPI...');
+        await new Promise(resolve => {
+          const checkAPI = () => {
+            if (window.electronAPI) {
+              resolve();
+            } else {
+              setTimeout(checkAPI, 100);
+            }
+          };
+          checkAPI();
+        });
+      }
+
+      console.log('🔐 Attempting login with electronAPI.authLogin...');
+      const result = await window.electronAPI.authLogin(credentials);
+      console.log('🔐 Login result:', result);
       
       if (result.success) {
         localStorage.setItem('bobexplorer_user', JSON.stringify(result.user));
@@ -82,7 +109,8 @@ export default function AuthProvider({ children }) {
         return { success: false, error: result.error };
       }
     } catch (error) {
-      const errorMessage = 'Login failed. Please try again.';
+      console.error('❌ Login error:', error);
+      const errorMessage = 'Login failed. Please check your connection and try again.';
       dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
       return { success: false, error: errorMessage };
     }
