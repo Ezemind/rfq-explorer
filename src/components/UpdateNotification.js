@@ -31,10 +31,34 @@ const UpdateNotification = () => {
         setUpdateState('downloaded');
       });
 
+      // Listen for update not available
+      const removeUpdateNotAvailable = window.electronAPI.onUpdateNotAvailable?.((event, info) => {
+        if (updateState === 'checking') {
+          setUpdateState('not-available');
+          setTimeout(() => {
+            setShowNotification(false);
+            setUpdateState(null);
+          }, 3000);
+        }
+      });
+
+      // Listen for update errors
+      const removeUpdateError = window.electronAPI.onUpdateError?.((event, error) => {
+        if (updateState === 'checking') {
+          setUpdateState('error');
+          setTimeout(() => {
+            setShowNotification(false);
+            setUpdateState(null);
+          }, 5000);
+        }
+      });
+
       return () => {
         removeUpdateAvailable();
         removeDownloadProgress();
         removeUpdateDownloaded();
+        removeUpdateNotAvailable?.();
+        removeUpdateError?.();
       };
     }
   }, [updateState]);
@@ -117,6 +141,26 @@ const UpdateNotification = () => {
                       style={{ width: `${downloadProgress}%` }}
                     ></div>
                   </div>
+                </div>
+              </>
+            )}
+            
+            {updateState === 'not-available' && (
+              <>
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <div>
+                  <h4 className="font-medium text-gray-900">Up to Date</h4>
+                  <p className="text-sm text-gray-600">You have the latest version (v{currentVersion})</p>
+                </div>
+              </>
+            )}
+            
+            {updateState === 'error' && (
+              <>
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <div>
+                  <h4 className="font-medium text-gray-900">Update Check Failed</h4>
+                  <p className="text-sm text-gray-600">Unable to check for updates. Please try again later.</p>
                 </div>
               </>
             )}

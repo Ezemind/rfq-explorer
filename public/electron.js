@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Notification, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Notification, shell, Menu } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 // Check if we're in development mode
@@ -40,25 +40,41 @@ const db = new Pool(dbConfig);
 
 // Auto-updater configuration
 if (!isDev) {
-  autoUpdater.checkForUpdatesAndNotify();
+  // Configure the update server
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'Ezemind',
+    repo: 'rfq-explorer'
+  });
+  
+  // Check for updates after app is ready
+  setTimeout(() => {
+    autoUpdater.checkForUpdatesAndNotify();
+  }, 3000); // Wait 3 seconds after app starts
   
   autoUpdater.on('checking-for-update', () => {
     console.log('Checking for update...');
   });
   
   autoUpdater.on('update-available', (info) => {
-    console.log('Update available.');
+    console.log('Update available:', info);
     if (mainWindow) {
       mainWindow.webContents.send('update-available', info);
     }
   });
   
   autoUpdater.on('update-not-available', (info) => {
-    console.log('Update not available.');
+    console.log('Update not available:', info);
+    if (mainWindow) {
+      mainWindow.webContents.send('update-not-available', info);
+    }
   });
   
   autoUpdater.on('error', (err) => {
-    console.log('Error in auto-updater. ' + err);
+    console.log('Error in auto-updater:', err);
+    if (mainWindow) {
+      mainWindow.webContents.send('update-error', err.message);
+    }
   });
   
   autoUpdater.on('download-progress', (progressObj) => {
@@ -72,7 +88,7 @@ if (!isDev) {
   });
   
   autoUpdater.on('update-downloaded', (info) => {
-    console.log('Update downloaded');
+    console.log('Update downloaded:', info);
     if (mainWindow) {
       mainWindow.webContents.send('update-downloaded', info);
     }
@@ -94,8 +110,15 @@ function createWindow() {
       webSecurity: true
     },
     titleBarStyle: 'default',
-    show: false
+    show: false,
+    autoHideMenuBar: !isDev, // Hide menu bar in production
+    menuBarVisible: isDev     // Only show menu bar in development
   });
+
+  // Remove menu bar completely for production users
+  if (!isDev) {
+    Menu.setApplicationMenu(null);
+  }
 
   const startUrl = isDev 
     ? 'http://localhost:3000' 
