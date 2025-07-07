@@ -8,6 +8,7 @@ const UpdateSettings = () => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [currentVersion, setCurrentVersion] = useState('');
   const [checking, setChecking] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     // Get current version
@@ -93,6 +94,7 @@ const UpdateSettings = () => {
   const handleCheckForUpdates = () => {
     if (window.electronAPI) {
       setChecking(true);
+      setError(null); // Reset error state
       window.electronAPI.checkForUpdates();
       setUpdateState('checking');
       
