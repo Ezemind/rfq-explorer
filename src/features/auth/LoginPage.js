@@ -30,16 +30,20 @@ export default function LoginPage() {
           <div className="text-center mb-8">
             <div className="mb-6">
               <img 
-                src="/mcm-white-logo.png" 
+                src={process.env.NODE_ENV === 'development' ? "/mcm-white-logo.png" : "./mcm-white-logo.png"}
                 alt="MCM Logo" 
                 className="h-16 mx-auto object-contain"
+                onError={(e) => {
+                  console.log('Logo failed to load, hiding...');
+                  e.target.style.display = 'none';
+                }}
               />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">
               Bob Explorer V3
             </h1>
             <p className="text-gray-400 text-sm">
-              WhatsApp CRM • Central Command Hub • v1.1.8
+              WhatsApp CRM • Central Command Hub • v1.1.9
             </p>
           </div>
 

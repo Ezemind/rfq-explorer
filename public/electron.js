@@ -126,14 +126,16 @@ function createWindow() {
     height: 900,
     minWidth: 1200,
     minHeight: 700,
-    icon: path.join(__dirname, '../assets/icon.png'),
+    icon: isDev ? path.join(__dirname, '../assets/icon.png') : path.join(__dirname, '../assets/icon.png'),
     title: 'RFQ Explorer - Professional CRM Solution',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
-      webSecurity: true,
-      devTools: isDev
+      webSecurity: false, // Disable web security for file:// protocol issues
+      devTools: isDev,
+      allowRunningInsecureContent: true,
+      experimentalFeatures: true
     },
     titleBarStyle: 'default',
     show: false,
@@ -165,17 +167,61 @@ function createWindow() {
       const errorHtml = `
         <html>
           <head><title>Loading Error</title></head>
-          <body style="font-family: Arial; padding: 50px; text-align: center;">
-            <h1>Loading Error</h1>
-            <p>Failed to load application: ${errorDescription}</p>
-            <p>Error Code: ${errorCode}</p>
-            <p>URL: ${validatedURL}</p>
+          <body style="font-family: Arial; padding: 50px; text-align: center; background: #f0f0f0;">
+            <h1>🚨 Loading Error</h1>
+            <p><strong>Failed to load application:</strong> ${errorDescription}</p>
+            <p><strong>Error Code:</strong> ${errorCode}</p>
+            <p><strong>URL:</strong> ${validatedURL}</p>
+            <hr>
+            <p>Expected path: ${path.join(__dirname, '../build/index.html')}</p>
+            <p>File exists: ${require('fs').existsSync(path.join(__dirname, '../build/index.html'))}</p>
             <button onclick="location.reload()">Retry</button>
           </body>
         </html>
       `;
       mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(errorHtml)}`);
     }
+  });
+
+  // Add console message listener to capture React errors
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`[RENDERER ${level}] ${message} (${sourceId}:${line})`);
+  });
+
+  // Listen for any unhandled errors in the renderer
+  mainWindow.webContents.on('crashed', (event, killed) => {
+    console.error('❌ Renderer process crashed:', { killed });
+  });
+
+  // Add DOM ready check
+  mainWindow.webContents.once('dom-ready', () => {
+    console.log('✅ DOM is ready');
+    
+    // Inject a script to check if React loaded
+    mainWindow.webContents.executeJavaScript(`
+      console.log('🔍 Checking React app status...');
+      console.log('Document ready state:', document.readyState);
+      console.log('Root element exists:', !!document.getElementById('root'));
+      console.log('Root element content length:', document.getElementById('root')?.innerHTML?.length || 0);
+      console.log('Scripts loaded:', document.scripts.length);
+      console.log('ElectronAPI available:', !!window.electronAPI);
+      
+      // Check for React
+      setTimeout(() => {
+        if (window.React) {
+          console.log('✅ React is loaded');
+        } else {
+          console.log('❌ React not found');
+        }
+        
+        const rootEl = document.getElementById('root');
+        if (rootEl && rootEl.innerHTML.trim()) {
+          console.log('✅ Root element has content');
+        } else {
+          console.log('❌ Root element is empty or missing');
+        }
+      }, 2000);
+    `).catch(err => console.error('Script injection failed:', err));
   });
 
   // Show window when ready and focus it

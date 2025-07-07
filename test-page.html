@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .test-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(0, 255, 0, 0.2);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎯 RFQ Explorer Test Page</h1>
+        <div class="status">✅ HTML is loading correctly</div>
+        <div class="status">✅ CSS styles are working</div>
+        <div class="status" id="js-status">❌ JavaScript not loaded yet</div>
+        
+        <h2>Testing ElectronAPI</h2>
+        <div id="electron-status">⏳ Checking...</div>
+        
+        <h2>App Information</h2>
+        <div>Version: 1.1.7</div>
+        <div>Environment: Production Build</div>
+        
+        <button id="test-btn" style="margin-top: 20px; padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Test Button
+        </button>
+    </div>
+
+    <script>
+        // Test basic JavaScript
+        document.getElementById('js-status').innerHTML = '✅ JavaScript is working';
+        
+        // Test ElectronAPI
+        function checkElectronAPI() {
+            const statusEl = document.getElementById('electron-status');
+            
+            if (window.electronAPI) {
+                statusEl.innerHTML = '✅ ElectronAPI is available';
+                statusEl.style.background = 'rgba(0, 255, 0, 0.2)';
+                
+                // Test a simple API call
+                setTimeout(async () => {
+                    try {
+                        const version = await window.electronAPI.getAppVersion();
+                        statusEl.innerHTML = `✅ ElectronAPI working - App version: ${version.version}`;
+                    } catch (error) {
+                        statusEl.innerHTML = `⚠️ ElectronAPI available but error: ${error.message}`;
+                        statusEl.style.background = 'rgba(255, 255, 0, 0.2)';
+                    }
+                }, 1000);
+            } else {
+                statusEl.innerHTML = '❌ ElectronAPI not available';
+                statusEl.style.background = 'rgba(255, 0, 0, 0.2)';
+                
+                // Retry after a delay
+                setTimeout(checkElectronAPI, 1000);
+            }
+        }
+        
+        checkElectronAPI();
+        
+        // Test button functionality
+        document.getElementById('test-btn').addEventListener('click', function() {
+            alert('Button clicked! Electron is working.');
+        });
+        
+        console.log('🎯 Test page loaded successfully');
+        console.log('ElectronAPI available:', !!window.electronAPI);
+        console.log('Window object:', window);
+    </script>
+</body>
+</html>

@@ -6,10 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="RFQ Explorer - Professional CRM solution for managing quotes and customer communications" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: file:; connect-src 'self' https: wss: ws:; img-src 'self' data: https: file:; media-src 'self' data: https: file:;" />
     <title>RFQ Explorer</title>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <script>
+      // Debug script for production builds
+      console.log('🔍 Index.html loaded');
+      console.log('Location:', window.location);
+      console.log('Protocol:', window.location.protocol);
+      
+      // Add error handling
+      window.addEventListener('error', function(e) {
+        console.error('Global error:', e.error, e.filename, e.lineno);
+      });
+      
+      window.addEventListener('unhandledrejection', function(e) {
+        console.error('Unhandled promise rejection:', e.reason);
+      });
+    </script>
   </body>
 </html>

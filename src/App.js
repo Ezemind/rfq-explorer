@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AuthProvider from './features/auth/AuthProvider';
 import { useAuth } from './features/auth/useAuth';
 import { ToastProvider } from './contexts/ToastContext';
@@ -93,17 +93,84 @@ function AppContent() {
 }
 
 function App() {
+  console.log('🎯 Main App component rendering...');
+  
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <ConfirmProvider>
-          <Router>
-            <AppContent />
-          </Router>
-        </ConfirmProvider>
-      </ToastProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <ToastProvider>
+          <ConfirmProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </ConfirmProvider>
+        </ToastProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
+}
+
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('🚨 App crashed:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          height: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background: '#f8f9fa',
+          fontFamily: 'Arial, sans-serif',
+          padding: '20px'
+        }}>
+          <h1 style={{ color: '#dc3545' }}>🚨 Application Error</h1>
+          <p>Something went wrong. Please restart the application.</p>
+          <details style={{ marginTop: '20px', width: '100%', maxWidth: '600px' }}>
+            <summary>Error Details</summary>
+            <pre style={{ 
+              background: '#f1f3f4', 
+              padding: '10px', 
+              overflow: 'auto',
+              fontSize: '12px'
+            }}>
+              {this.state.error?.toString()}
+            </pre>
+          </details>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{
+              marginTop: '20px',
+              padding: '10px 20px',
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            Reload App
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 export default App;
