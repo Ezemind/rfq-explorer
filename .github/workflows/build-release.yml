@@ -34,4 +34,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: rfq-explorer-windows
-        path: dist/
+        path: |
+          dist/*.exe
+          dist/*.yml
+          dist/*.blockmap

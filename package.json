@@ -1,6 +1,6 @@
 {
   "name": "rfq-explorer",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "RFQ Explorer - Professional CRM solution for managing quotes and customer communications",
   "author": {
     "name": "Pieter Kemp",
@@ -102,7 +102,9 @@
     "publish": {
       "provider": "github",
       "owner": "Ezemind",
-      "repo": "rfq-explorer"
+      "repo": "rfq-explorer",
+      "private": false,
+      "releaseType": "release"
     }
   },
   "browserslist": {
