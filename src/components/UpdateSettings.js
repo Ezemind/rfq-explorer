@@ -60,9 +60,17 @@ const UpdateSettings = () => {
         console.error('❌ Update error:', error);
         setUpdateState('error');
         setChecking(false);
+        
+        // Store detailed error information
+        setError({
+          message: error.message || 'Unknown error',
+          details: error.details || error.stack || 'No additional details available'
+        });
+        
         setTimeout(() => {
           setUpdateState(null);
-        }, 8000);
+          setError(null);
+        }, 10000); // Show error for 10 seconds
       });
 
       return () => {
@@ -210,9 +218,17 @@ const UpdateSettings = () => {
                 <AlertCircle className="h-4 w-4" />
                 <span className="font-medium">Update Check Failed</span>
               </div>
-              <p className="text-sm text-red-700 dark:text-red-400">
-                Unable to check for updates. Please check your internet connection and try again.
+              <p className="text-sm text-red-700 dark:text-red-400 mb-2">
+                {error?.message || 'Unable to check for updates. Please check your internet connection and try again.'}
               </p>
+              {error?.details && (
+                <details className="text-xs text-red-600 dark:text-red-500">
+                  <summary className="cursor-pointer hover:text-red-800 dark:hover:text-red-300">Technical Details</summary>
+                  <pre className="mt-2 p-2 bg-red-100 dark:bg-red-900/30 rounded border text-xs overflow-x-auto">
+                    {error.details}
+                  </pre>
+                </details>
+              )}
             </div>
           )}
 

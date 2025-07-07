@@ -702,30 +702,54 @@ ipcMain.handle('open-external', (event, url) => {
 
 // Auto-updater IPC handlers
 ipcMain.handle('check-for-updates', async () => {
-  if (isDev) {
+  const isDevMode = !app.isPackaged;
+  console.log('🔍 Update check initiated...');
+  console.log('📊 Development mode:', isDevMode);
+  console.log('📊 App packaged:', app.isPackaged);
+  console.log('📊 Process type:', process.type);
+  console.log('📊 App path:', app.getAppPath());
+  
+  if (isDevMode) {
     console.log('⚠️ Update checking disabled in development mode');
     if (mainWindow) {
       mainWindow.webContents.send('update-error', {
         message: 'Update checking is only available in production builds',
+        details: 'Development mode detected - app.isPackaged: false',
         stack: 'Development mode detected'
       });
+      mainWindow.webContents.send('update-status', 'error');
     }
     return { success: false, error: 'Development mode' };
   }
   
   try {
-    console.log('🔍 Manual update check initiated...');
+    console.log('🔍 Production mode confirmed - proceeding with update check...');
     if (mainWindow) {
       mainWindow.webContents.send('update-status', 'checking');
     }
     
     // First try the electron-updater method
     try {
+      console.log('🔄 Attempting electron-updater method...');
       const result = await autoUpdater.checkForUpdatesAndNotify();
       console.log('✅ Update check completed via electron-updater:', result);
-      return { success: true, result };
+      return { success: true, result, method: 'electron-updater' };
     } catch (updaterError) {
-      console.log('⚠️ Electron-updater failed, trying manual GitHub API check...');
+      console.log('⚠️ Electron-updater failed:', updaterError.message);
+      console.log('🔄 Trying manual GitHub API check...');
+      
+      // Test basic connectivity first
+      console.log('🌐 Testing network connectivity...');
+      try {
+        const connectTest = await axios.get('https://api.github.com', {
+          timeout: 5000,
+          headers: { 'User-Agent': 'RFQ-Explorer-Updater' }
+        });
+        console.log('✅ GitHub API accessible, status:', connectTest.status);
+      } catch (connError) {
+        console.error('❌ Cannot reach GitHub API:', connError.message);
+        throw new Error(`Network connectivity issue: ${connError.message}`);
+      }
       
       // Fallback to manual GitHub API check
       const currentVersion = app.getVersion();
