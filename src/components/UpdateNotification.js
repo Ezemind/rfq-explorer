@@ -14,46 +14,57 @@ const UpdateNotification = () => {
         setCurrentVersion(version);
       });
 
+      // Listen for update status changes
+      const removeUpdateStatus = window.electronAPI.onUpdateStatus?.((event, status) => {
+        console.log('📊 Update status:', status);
+        setUpdateState(status);
+        if (status === 'checking' || status === 'downloading' || status === 'ready') {
+          setShowNotification(true);
+        }
+      });
+
       // Listen for update events
       const removeUpdateAvailable = window.electronAPI.onUpdateAvailable((event, info) => {
+        console.log('✅ Update available:', info);
         setUpdateState('downloading'); // Start downloading immediately
         setShowNotification(true);
       });
 
       const removeDownloadProgress = window.electronAPI.onDownloadProgress((event, progress) => {
-        setDownloadProgress(Math.round(progress.percent));
+        console.log('📥 Download progress:', progress);
+        setDownloadProgress(Math.round(progress.percent || 0));
         if (updateState !== 'downloading') {
           setUpdateState('downloading');
         }
       });
 
       const removeUpdateDownloaded = window.electronAPI.onUpdateDownloaded((event, info) => {
+        console.log('✅ Update downloaded:', info);
         setUpdateState('downloaded');
       });
 
       // Listen for update not available
       const removeUpdateNotAvailable = window.electronAPI.onUpdateNotAvailable?.((event, info) => {
-        if (updateState === 'checking') {
-          setUpdateState('not-available');
-          setTimeout(() => {
-            setShowNotification(false);
-            setUpdateState(null);
-          }, 3000);
-        }
+        console.log('ℹ️ Update not available:', info);
+        setUpdateState('not-available');
+        setTimeout(() => {
+          setShowNotification(false);
+          setUpdateState(null);
+        }, 3000);
       });
 
       // Listen for update errors
       const removeUpdateError = window.electronAPI.onUpdateError?.((event, error) => {
-        if (updateState === 'checking') {
-          setUpdateState('error');
-          setTimeout(() => {
-            setShowNotification(false);
-            setUpdateState(null);
-          }, 5000);
-        }
+        console.error('❌ Update error:', error);
+        setUpdateState('error');
+        setTimeout(() => {
+          setShowNotification(false);
+          setUpdateState(null);
+        }, 5000);
       });
 
       return () => {
+        removeUpdateStatus?.();
         removeUpdateAvailable();
         removeDownloadProgress();
         removeUpdateDownloaded();

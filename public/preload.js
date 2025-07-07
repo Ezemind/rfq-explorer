@@ -56,5 +56,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateError: (callback) => {
     ipcRenderer.on('update-error', callback);
     return () => ipcRenderer.removeListener('update-error', callback);
+  },
+  onUpdateStatus: (callback) => {
+    ipcRenderer.on('update-status', callback);
+    return () => ipcRenderer.removeListener('update-status', callback);
   }
 });

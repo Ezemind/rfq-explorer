@@ -40,57 +40,82 @@ const db = new Pool(dbConfig);
 
 // Auto-updater configuration
 if (!isDev) {
-  // Simple configuration for GitHub
+  // Enhanced configuration for GitHub with better error handling
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'Ezemind',
-    repo: 'rfq-explorer'
+    repo: 'rfq-explorer',
+    token: process.env.GH_TOKEN || process.env.GITHUB_TOKEN, // Use environment variable
+    private: false,
+    releaseType: 'release'
   });
+  
+  // More robust update checking
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.allowPrerelease = false;
   
   // Check for updates after app is ready
   setTimeout(() => {
     console.log('🔍 Checking for updates...');
     autoUpdater.checkForUpdatesAndNotify();
-  }, 3000);
+  }, 5000); // Increased delay to ensure app is fully loaded
   
   autoUpdater.on('checking-for-update', () => {
     console.log('🔍 Checking for update...');
+    if (mainWindow) {
+      mainWindow.webContents.send('update-status', 'checking');
+    }
   });
   
   autoUpdater.on('update-available', (info) => {
-    console.log('✅ Update available:', info);
+    console.log('✅ Update available:', info.version);
     if (mainWindow) {
       mainWindow.webContents.send('update-available', info);
+      mainWindow.webContents.send('update-status', 'downloading');
     }
     // Start downloading automatically
     autoUpdater.downloadUpdate();
   });
   
   autoUpdater.on('update-not-available', (info) => {
-    console.log('ℹ️ Update not available');
+    console.log('ℹ️ Update not available - current version is latest');
     if (mainWindow) {
       mainWindow.webContents.send('update-not-available', info);
+      mainWindow.webContents.send('update-status', 'latest');
     }
   });
   
   autoUpdater.on('error', (err) => {
     console.error('❌ Auto-updater error:', err.message);
+    console.error('Full error:', err);
     if (mainWindow) {
-      mainWindow.webContents.send('update-error', err.message);
+      mainWindow.webContents.send('update-error', {
+        message: err.message,
+        stack: err.stack
+      });
+      mainWindow.webContents.send('update-status', 'error');
     }
   });
   
   autoUpdater.on('download-progress', (progressObj) => {
-    console.log(`📥 Download progress: ${Math.round(progressObj.percent)}%`);
+    const percent = Math.round(progressObj.percent);
+    console.log(`📥 Download progress: ${percent}% (${progressObj.transferred}/${progressObj.total} bytes)`);
     if (mainWindow) {
-      mainWindow.webContents.send('download-progress', progressObj);
+      mainWindow.webContents.send('download-progress', {
+        percent,
+        transferred: progressObj.transferred,
+        total: progressObj.total,
+        bytesPerSecond: progressObj.bytesPerSecond
+      });
     }
   });
   
   autoUpdater.on('update-downloaded', (info) => {
-    console.log('✅ Update downloaded');
+    console.log('✅ Update downloaded successfully');
     if (mainWindow) {
       mainWindow.webContents.send('update-downloaded', info);
+      mainWindow.webContents.send('update-status', 'ready');
     }
   });
 }
@@ -107,12 +132,14 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
-      webSecurity: true
+      webSecurity: true,
+      devTools: isDev
     },
     titleBarStyle: 'default',
     show: false,
-    autoHideMenuBar: !isDev, // Hide menu bar in production
-    menuBarVisible: isDev     // Only show menu bar in development
+    autoHideMenuBar: !isDev,
+    menuBarVisible: isDev,
+    backgroundColor: '#ffffff' // Prevent white flash
   });
 
   // Remove menu bar completely for production users
@@ -125,19 +152,46 @@ function createWindow() {
     : `file://${path.join(__dirname, '../build/index.html')}`;
     
   console.log('Loading URL:', startUrl);
+  console.log('Build path exists:', require('fs').existsSync(path.join(__dirname, '../build/index.html')));
   
   mainWindow.loadURL(startUrl);
 
-  // Handle loading errors
-  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-    console.error('Failed to load:', errorCode, errorDescription);
+  // Handle loading errors with more details
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error('❌ Failed to load:', errorCode, errorDescription, validatedURL);
+    
+    // Try to load a fallback page or show error
+    if (!isDev) {
+      const errorHtml = `
+        <html>
+          <head><title>Loading Error</title></head>
+          <body style="font-family: Arial; padding: 50px; text-align: center;">
+            <h1>Loading Error</h1>
+            <p>Failed to load application: ${errorDescription}</p>
+            <p>Error Code: ${errorCode}</p>
+            <p>URL: ${validatedURL}</p>
+            <button onclick="location.reload()">Retry</button>
+          </body>
+        </html>
+      `;
+      mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(errorHtml)}`);
+    }
   });
 
+  // Show window when ready and focus it
   mainWindow.once('ready-to-show', () => {
+    console.log('✅ Window ready to show');
     mainWindow.show();
+    mainWindow.focus();
+    
     if (isDev) {
       mainWindow.webContents.openDevTools();
     }
+  });
+
+  // Log when window is shown
+  mainWindow.on('show', () => {
+    console.log('✅ Window is now visible');
   });
 
   mainWindow.on('closed', () => {
