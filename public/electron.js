@@ -400,6 +400,33 @@ ipcMain.handle('db-test', async (event) => {
   }
 });
 
+// Password management
+ipcMain.handle('reset-user-password', async (event, { userId, newPassword }) => {
+  try {
+    console.log('🔒 Resetting password for user ID:', userId);
+    
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    const result = await db.query(`
+      UPDATE staff_users 
+      SET password_hash = $1, updated_at = NOW()
+      WHERE id = $2
+    `, [hashedPassword, userId]);
+    
+    if (result.rowCount > 0) {
+      console.log('✅ Password reset successful for user ID:', userId);
+      return { success: true, message: 'Password reset successfully' };
+    } else {
+      console.log('❌ No user found with ID:', userId);
+      return { success: false, error: 'User not found' };
+    }
+  } catch (error) {
+    console.error('❌ Error resetting password:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Authentication
 ipcMain.handle('auth-login', async (event, { username, password }) => {
   try {

@@ -100,7 +100,40 @@ export default function AdminSettings({ onClose }) {
       }
     } catch (error) {
       console.error('Error updating user status:', error);
-      notification.error('Error updating user status: ' + error.message);
+      notification.error('Failed to update user status');
+    }
+  };
+
+  const resetUserPassword = async (userId, username) => {
+    if (!window.confirm(`Reset password for user "${username}"?\n\nThis will generate a new temporary password that you can provide to the user.`)) {
+      return;
+    }
+
+    try {
+      // Generate a temporary password
+      const tempPassword = `Temp${Math.random().toString(36).slice(-8)}!`;
+      
+      const result = await window.electronAPI.resetUserPassword({
+        userId: userId,
+        newPassword: tempPassword
+      });
+      
+      if (result.success) {
+        notification.success(
+          'Password reset successfully!',
+          { duration: 8000 }
+        );
+        
+        // Show the temporary password to admin
+        alert(`Password reset successful!\n\nUser: ${username}\nNew Temporary Password: ${tempPassword}\n\nPlease provide this password to the user securely.\nAdvise them to change it after logging in.`);
+        
+        loadUsers();
+      } else {
+        notification.error('Failed to reset password: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      notification.error('Failed to reset password');
     }
   };
 
@@ -245,6 +278,7 @@ export default function AdminSettings({ onClose }) {
                       users={filteredUsers} 
                       loading={loading} 
                       onToggleStatus={toggleUserStatus}
+                      onResetPassword={resetUserPassword}
                       onAddUser={() => setShowAddUser(true)}
                       onRefresh={loadUsers}
                       searchTerm={searchTerm}
@@ -283,6 +317,7 @@ function UserManagement({
   users, 
   loading, 
   onToggleStatus, 
+  onResetPassword,
   onAddUser, 
   onRefresh,
   searchTerm,
@@ -463,7 +498,7 @@ function UserManagement({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => onToggleStatus(user.id, user.is_active)}
+                        onClick={() => toggleUserStatus(user.id, user.is_active)}
                         className={cn(
                           "transition-all duration-200",
                           user.is_active
@@ -472,6 +507,16 @@ function UserManagement({
                         )}
                       >
                         {user.is_active ? 'Deactivate' : 'Activate'}
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onResetPassword(user.id, user.username)}
+                        className="hover:bg-orange-50 hover:text-orange-700 hover:border-orange-200 dark:hover:bg-orange-950 dark:hover:text-orange-400 transition-all duration-200"
+                        title="Reset user password"
+                      >
+                        Reset Password
                       </Button>
                       
                       <Button 

@@ -9,6 +9,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Authentication
   authLogin: (credentials) => ipcRenderer.invoke('auth-login', credentials),
   
+  // User management
+  resetUserPassword: (data) => ipcRenderer.invoke('reset-user-password', data),
+  
   // WhatsApp operations
   whatsappSendMessage: (data) => ipcRenderer.invoke('whatsapp-send-message', data),
   sendMessage: (data) => ipcRenderer.invoke('whatsapp-send-message', data), // Alias for compatibility
