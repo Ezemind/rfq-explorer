@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   
   // Authentication
   authLogin: (credentials) => ipcRenderer.invoke('auth-login', credentials),
+  hashPassword: (password) => ipcRenderer.invoke('hash-password', password),
   
   // User management
   resetUserPassword: (data) => ipcRenderer.invoke('reset-user-password', data),

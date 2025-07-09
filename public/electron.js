@@ -479,6 +479,21 @@ ipcMain.handle('auth-login', async (event, { username, password }) => {
     return { success: false, error: 'Authentication failed: ' + error.message };
   }
 });
+
+// Password hashing
+ipcMain.handle('hash-password', async (event, password) => {
+  try {
+    console.log('🔒 Hashing password for new user...');
+    const saltRounds = 10;
+    const hash = await bcrypt.hash(password, saltRounds);
+    console.log('✅ Password hashed successfully');
+    return { success: true, hash };
+  } catch (error) {
+    console.error('❌ Password hashing error:', error);
+    return { success: false, error: 'Failed to hash password: ' + error.message };
+  }
+});
+
 // WhatsApp API operations
 ipcMain.handle('whatsapp-send-message', async (event, { to, message, type = 'text' }) => {
   try {

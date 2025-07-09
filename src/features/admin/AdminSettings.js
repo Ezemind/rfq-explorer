@@ -844,6 +844,15 @@ function AddUserModal({ onClose, onUserAdded }) {
     setSaving(true);
 
     try {
+      // Hash the password using the electronAPI
+      const hashResult = await window.electronAPI.hashPassword(formData.password);
+      
+      if (!hashResult.success) {
+        alert('Failed to process password: ' + hashResult.error);
+        setSaving(false);
+        return;
+      }
+
       const result = await window.electronAPI.query(`
         INSERT INTO staff_users (
           username, email, first_name, last_name, password_hash, role, 
@@ -854,7 +863,7 @@ function AddUserModal({ onClose, onUserAdded }) {
         formData.email || null,
         formData.firstName || null,
         formData.lastName || null,
-        '$2b$10$' + Math.random().toString(36),
+        hashResult.hash,
         formData.role,
         formData.mobileNumber || null
       ]);
